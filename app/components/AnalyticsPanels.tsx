@@ -327,7 +327,152 @@ export function AnalyticsPanels({ events, backendClusters }: AnalyticsPanelsProp
 
   return (
     <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
-      {/* Row 1, Col 1: Extraction Quality Metrics */}
+      {/* Row 1, Col 1: Temporal Analytics */}
+      <Box bg="white" p={6} borderRadius="lg" shadow="md">
+        <VStack align="stretch" spacing={4}>
+          <HStack>
+            <MdTimeline size={24} color="#805ad5" />
+            <Text fontSize="lg" fontWeight="bold">
+              Temporal Analytics
+            </Text>
+          </HStack>
+          <Divider />
+
+          {temporalRange ? (
+            <>
+              <SimpleGrid columns={2} spacing={4}>
+                <Stat>
+                  <StatLabel fontSize="xs">Earliest Event</StatLabel>
+                  <StatNumber fontSize="lg">{temporalRange.earliest}</StatNumber>
+                </Stat>
+
+                <Stat>
+                  <StatLabel fontSize="xs">Latest Event</StatLabel>
+                  <StatNumber fontSize="lg">{temporalRange.latest}</StatNumber>
+                </Stat>
+              </SimpleGrid>
+
+              <Box>
+                <Text fontSize="xs" fontWeight="medium" mb={2}>
+                  Time Span
+                </Text>
+                <HStack justify="space-between" mb={1}>
+                  <Text fontSize="xs" color="gray.600">
+                    {temporalRange.span} days
+                  </Text>
+                  <Text fontSize="xs" color="gray.600">
+                    {(temporalRange.span / 365).toFixed(1)} years
+                  </Text>
+                </HStack>
+                <Progress
+                  value={Math.min((temporalRange.span / 365) * 10, 100)}
+                  colorScheme="purple"
+                  size="sm"
+                />
+              </Box>
+
+              <Divider />
+
+              <Box>
+                <Text fontSize="xs" fontWeight="medium" mb={2}>
+                  Cluster Distribution
+                </Text>
+                <HStack justify="space-between">
+                  <Stat>
+                    <StatLabel fontSize="xs">Total Clusters</StatLabel>
+                    <StatNumber fontSize="xl">
+                      {backendClusters?.clusters.length || 0}
+                    </StatNumber>
+                  </Stat>
+                  <Stat>
+                    <StatLabel fontSize="xs">Avg Events/Cluster</StatLabel>
+                    <StatNumber fontSize="xl">
+                      {backendClusters?.clusters.length
+                        ? (
+                            events.length / backendClusters.clusters.length
+                          ).toFixed(1)
+                        : 0}
+                    </StatNumber>
+                  </Stat>
+                </HStack>
+              </Box>
+            </>
+          ) : (
+            <Text fontSize="sm" color="gray.500">
+              No temporal data available
+            </Text>
+          )}
+        </VStack>
+      </Box>
+
+      {/* Row 1, Col 2: Spatial Analytics */}
+      <Box bg="white" p={6} borderRadius="lg" shadow="md">
+        <VStack align="stretch" spacing={4}>
+          <HStack>
+            <MdLocationOn size={24} color="#38a169" />
+            <Text fontSize="lg" fontWeight="bold">
+              Spatial Analytics
+            </Text>
+          </HStack>
+          <Divider />
+
+          <SimpleGrid columns={2} spacing={4}>
+            <Stat>
+              <StatLabel fontSize="xs">Unique Locations</StatLabel>
+              <StatNumber fontSize="2xl">{geographicSpread.uniqueLocations}</StatNumber>
+              <StatHelpText fontSize="xs">Distinct places</StatHelpText>
+            </Stat>
+
+            <Stat>
+              <StatLabel fontSize="xs">Geocoded</StatLabel>
+              <StatNumber fontSize="2xl">{geographicSpread.locationsWithCoords}</StatNumber>
+              <StatHelpText fontSize="xs">{dimensionStats.spatialCoverage}% coverage</StatHelpText>
+            </Stat>
+          </SimpleGrid>
+
+          <Box>
+            <Text fontSize="xs" fontWeight="medium" mb={2}>
+              Location Types
+            </Text>
+            <VStack spacing={1} align="stretch">
+              {geographicSpread.locationTypes.slice(0, 4).map(([type, count]) => (
+                <HStack key={type} justify="space-between">
+                  <Text fontSize="xs" textTransform="capitalize">
+                    {type}
+                  </Text>
+                  <Badge colorScheme="green" fontSize="xs">
+                    {count}
+                  </Badge>
+                </HStack>
+              ))}
+            </VStack>
+          </Box>
+
+          <Divider />
+
+          <Box>
+            <Text fontSize="xs" fontWeight="medium" mb={2}>
+              Top Sources
+            </Text>
+            <List spacing={1}>
+              {dimensionStats.topSources.slice(0, 3).map(([source, count]) => (
+                <ListItem key={source} fontSize="xs">
+                  <HStack justify="space-between">
+                    <Text isTruncated maxW="200px">
+                      {source}
+                    </Text>
+                    <Badge colorScheme="teal" fontSize="xs">
+                      {count}
+                    </Badge>
+                  </HStack>
+                </ListItem>
+              ))}
+            </List>
+          </Box>
+        </VStack>
+      </Box>
+
+      {/* Row 2, Col 1: Extraction Quality Metrics */}
       <Box bg="white" p={6} borderRadius="lg" shadow="md">
         <VStack align="stretch" spacing={4}>
           <HStack>
@@ -462,7 +607,7 @@ export function AnalyticsPanels({ events, backendClusters }: AnalyticsPanelsProp
         </VStack>
       </Box>
 
-      {/* Row 1, Col 2: Event Burst Detection */}
+      {/* Row 2, Col 2: Event Burst Detection */}
       <Box bg="white" p={6} borderRadius="lg" shadow="md">
         <VStack align="stretch" spacing={4}>
           <HStack>
@@ -533,151 +678,6 @@ export function AnalyticsPanels({ events, backendClusters }: AnalyticsPanelsProp
               </VStack>
             </>
           )}
-        </VStack>
-      </Box>
-
-      {/* Row 2, Col 1: Temporal Analytics */}
-      <Box bg="white" p={6} borderRadius="lg" shadow="md">
-        <VStack align="stretch" spacing={4}>
-          <HStack>
-            <MdTimeline size={24} color="#805ad5" />
-            <Text fontSize="lg" fontWeight="bold">
-              Temporal Analytics
-            </Text>
-          </HStack>
-          <Divider />
-
-          {temporalRange ? (
-            <>
-              <SimpleGrid columns={2} spacing={4}>
-                <Stat>
-                  <StatLabel fontSize="xs">Earliest Event</StatLabel>
-                  <StatNumber fontSize="lg">{temporalRange.earliest}</StatNumber>
-                </Stat>
-
-                <Stat>
-                  <StatLabel fontSize="xs">Latest Event</StatLabel>
-                  <StatNumber fontSize="lg">{temporalRange.latest}</StatNumber>
-                </Stat>
-              </SimpleGrid>
-
-              <Box>
-                <Text fontSize="xs" fontWeight="medium" mb={2}>
-                  Time Span
-                </Text>
-                <HStack justify="space-between" mb={1}>
-                  <Text fontSize="xs" color="gray.600">
-                    {temporalRange.span} days
-                  </Text>
-                  <Text fontSize="xs" color="gray.600">
-                    {(temporalRange.span / 365).toFixed(1)} years
-                  </Text>
-                </HStack>
-                <Progress
-                  value={Math.min((temporalRange.span / 365) * 10, 100)}
-                  colorScheme="purple"
-                  size="sm"
-                />
-              </Box>
-
-              <Divider />
-
-              <Box>
-                <Text fontSize="xs" fontWeight="medium" mb={2}>
-                  Cluster Distribution
-                </Text>
-                <HStack justify="space-between">
-                  <Stat>
-                    <StatLabel fontSize="xs">Total Clusters</StatLabel>
-                    <StatNumber fontSize="xl">
-                      {backendClusters?.clusters.length || 0}
-                    </StatNumber>
-                  </Stat>
-                  <Stat>
-                    <StatLabel fontSize="xs">Avg Events/Cluster</StatLabel>
-                    <StatNumber fontSize="xl">
-                      {backendClusters?.clusters.length
-                        ? (
-                            events.length / backendClusters.clusters.length
-                          ).toFixed(1)
-                        : 0}
-                    </StatNumber>
-                  </Stat>
-                </HStack>
-              </Box>
-            </>
-          ) : (
-            <Text fontSize="sm" color="gray.500">
-              No temporal data available
-            </Text>
-          )}
-        </VStack>
-      </Box>
-
-      {/* Row 2, Col 2: Spatial Analytics */}
-      <Box bg="white" p={6} borderRadius="lg" shadow="md">
-        <VStack align="stretch" spacing={4}>
-          <HStack>
-            <MdLocationOn size={24} color="#38a169" />
-            <Text fontSize="lg" fontWeight="bold">
-              Spatial Analytics
-            </Text>
-          </HStack>
-          <Divider />
-
-          <SimpleGrid columns={2} spacing={4}>
-            <Stat>
-              <StatLabel fontSize="xs">Unique Locations</StatLabel>
-              <StatNumber fontSize="2xl">{geographicSpread.uniqueLocations}</StatNumber>
-              <StatHelpText fontSize="xs">Distinct places</StatHelpText>
-            </Stat>
-
-            <Stat>
-              <StatLabel fontSize="xs">Geocoded</StatLabel>
-              <StatNumber fontSize="2xl">{geographicSpread.locationsWithCoords}</StatNumber>
-              <StatHelpText fontSize="xs">{dimensionStats.spatialCoverage}% coverage</StatHelpText>
-            </Stat>
-          </SimpleGrid>
-
-          <Box>
-            <Text fontSize="xs" fontWeight="medium" mb={2}>
-              Location Types
-            </Text>
-            <VStack spacing={1} align="stretch">
-              {geographicSpread.locationTypes.slice(0, 4).map(([type, count]) => (
-                <HStack key={type} justify="space-between">
-                  <Text fontSize="xs" textTransform="capitalize">
-                    {type}
-                  </Text>
-                  <Badge colorScheme="green" fontSize="xs">
-                    {count}
-                  </Badge>
-                </HStack>
-              ))}
-            </VStack>
-          </Box>
-
-          <Divider />
-
-          <Box>
-            <Text fontSize="xs" fontWeight="medium" mb={2}>
-              Top Sources
-            </Text>
-            <List spacing={1}>
-              {dimensionStats.topSources.slice(0, 3).map(([source, count]) => (
-                <ListItem key={source} fontSize="xs">
-                  <HStack justify="space-between">
-                    <Text isTruncated maxW="200px">
-                      {source}
-                    </Text>
-                    <Badge colorScheme="teal" fontSize="xs">
-                      {count}
-                    </Badge>
-                  </HStack>
-                </ListItem>
-              ))}
-            </List>
-          </Box>
         </VStack>
       </Box>
 
