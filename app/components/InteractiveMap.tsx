@@ -57,6 +57,41 @@ export function InteractiveMap({
   // Get Mapbox token from environment or use placeholder
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'YOUR_MAPBOX_TOKEN_HERE'
 
+  // Helper function to parse various date formats
+  const parseNormalizedDate = (dateStr: string | undefined) => {
+    if (!dateStr) return null
+
+    // Skip durations (P9Y, P7D, etc.)
+    if (dateStr.startsWith('P')) return null
+
+    // Handle intervals (2023-01-01/2023-12-31) - use start date
+    if (dateStr.includes('/')) {
+      const [start] = dateStr.split('/')
+      return new Date(start)
+    }
+
+    // Handle year only (2023)
+    if (/^\d{4}$/.test(dateStr)) {
+      return new Date(dateStr + '-01-01')
+    }
+
+    // Handle year-month (2020-08)
+    if (/^\d{4}-\d{2}$/.test(dateStr)) {
+      return new Date(dateStr + '-01')
+    }
+
+    // Handle full date
+    return new Date(dateStr)
+  }
+
+  // Format date for display
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   // Filter events with valid coordinates
   const validEvents = useMemo(() => {
     return events.filter((e) => e.latitude && e.longitude)
@@ -89,19 +124,70 @@ export function InteractiveMap({
     })
   }, [backendClusters, showClusters, events])
 
+  // Sort events by time (only events with parseable dates)
+  const eventsWithDates = useMemo(() => {
+    // Filter events with parseable dates and add parsed date
+    const eventsWithParsedDates = validEvents
+      .map((e) => ({
+        event: e,
+        parsedDate: parseNormalizedDate(e.timestamp || e.normalized_date),
+      }))
+      .filter((item) => item.parsedDate !== null)
+      .sort((a, b) => a.parsedDate!.getTime() - b.parsedDate!.getTime())
+
+    return eventsWithParsedDates.map((item) => item.event)
+  }, [validEvents])
+
+  // Events without parseable dates (should always be shown)
+  const eventsWithoutDates = useMemo(() => {
+    return validEvents.filter((e) => {
+      const parsed = parseNormalizedDate(e.timestamp || e.normalized_date)
+      return parsed === null
+    })
+  }, [validEvents])
+
   // Filter events by time
   const filteredEvents = useMemo(() => {
-    if (timeFilter === 100) return validEvents
+    if (timeFilter === 100) {
+      // Show all events when timeline is at 100%
+      return validEvents
+    }
 
-    const sortedEvents = [...validEvents].sort((a, b) => {
-      const dateA = a.timestamp || a.normalized_date || ''
-      const dateB = b.timestamp || b.normalized_date || ''
-      return dateA.localeCompare(dateB)
-    })
+    // Apply timeline filter only to events with dates
+    const cutoff = Math.floor((eventsWithDates.length * timeFilter) / 100)
+    const filteredDateEvents = eventsWithDates.slice(0, cutoff)
 
-    const cutoff = Math.floor((sortedEvents.length * timeFilter) / 100)
-    return sortedEvents.slice(0, cutoff)
-  }, [validEvents, timeFilter])
+    // Combine filtered date events with all non-date events
+    return [...filteredDateEvents, ...eventsWithoutDates]
+  }, [eventsWithDates, eventsWithoutDates, timeFilter, validEvents])
+
+  // Get time range for labels
+  const timeRange = useMemo(() => {
+    if (eventsWithDates.length === 0) return null
+
+    const earliestDate = parseNormalizedDate(
+      eventsWithDates[0].timestamp || eventsWithDates[0].normalized_date
+    )
+    const latestDate = parseNormalizedDate(
+      eventsWithDates[eventsWithDates.length - 1].timestamp ||
+        eventsWithDates[eventsWithDates.length - 1].normalized_date
+    )
+
+    // Calculate current filtered position
+    const cutoff = Math.floor((eventsWithDates.length * timeFilter) / 100)
+    const currentIndex = Math.min(Math.max(cutoff - 1, 0), eventsWithDates.length - 1)
+    const currentDate = parseNormalizedDate(
+      eventsWithDates[currentIndex]?.timestamp || eventsWithDates[currentIndex]?.normalized_date
+    )
+
+    if (!earliestDate || !latestDate) return null
+
+    return {
+      earliest: formatDate(earliestDate),
+      latest: formatDate(latestDate),
+      current: currentDate ? formatDate(currentDate) : formatDate(earliestDate),
+    }
+  }, [eventsWithDates, timeFilter])
 
   // Fit map to events on mount
   const fitBounds = useCallback(() => {
@@ -336,7 +422,7 @@ export function InteractiveMap({
       </Map>
 
       {/* Time Slider */}
-      {enableAnimation && validEvents.length > 0 && (
+      {enableAnimation && validEvents.length > 0 && timeRange && (
         <Box
           position="absolute"
           bottom={4}
@@ -353,8 +439,15 @@ export function InteractiveMap({
                 Timeline Filter
               </Text>
               <Text fontSize="xs" color="gray.600">
-                Showing {filteredEvents.length} / {validEvents.length} events
+                {eventsWithDates.length > 0
+                  ? `Showing ${filteredEvents.length} / ${validEvents.length} events (${eventsWithoutDates.length} without dates)`
+                  : `Showing ${filteredEvents.length} events (no dates)`}
               </Text>
+            </HStack>
+            <HStack justify="space-between" fontSize="xs" color="gray.600">
+              <Text>{timeRange.earliest}</Text>
+              <Text fontWeight="bold" color="blue.600">{timeRange.current}</Text>
+              <Text>{timeRange.latest}</Text>
             </HStack>
             <Slider
               value={timeFilter}

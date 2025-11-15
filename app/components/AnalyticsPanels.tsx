@@ -239,20 +239,50 @@ export function AnalyticsPanels({ events, backendClusters }: AnalyticsPanelsProp
     const temporalEvents = events.filter((e) => e.timestamp || e.normalized_date)
     if (temporalEvents.length === 0) return null
 
-    const dates = temporalEvents
-      .map((e) => parseNormalizedDate(e.timestamp || e.normalized_date))
-      .filter((d) => d && !(d as any).isInterval)
-      .sort((a: any, b: any) => a - b)
+    const eventsWithParsedDates = temporalEvents
+      .map((e) => ({
+        event: e,
+        parsedDate: parseNormalizedDate(e.timestamp || e.normalized_date),
+      }))
+      .filter((item) => item.parsedDate && !(item.parsedDate as any).isInterval)
 
-    if (dates.length === 0) return null
+    const dates = eventsWithParsedDates
+      .map((item) => item.parsedDate as Date)
+      .sort((a, b) => a.getTime() - b.getTime())
 
-    const earliest = dates[0] as Date
-    const latest = dates[dates.length - 1] as Date
+    const eventsWithActualDates = eventsWithParsedDates.length
+    const eventsWithoutActualDates = temporalEvents.length - eventsWithActualDates
+
+    if (dates.length === 0) {
+      return {
+        earliest: null,
+        latest: null,
+        span: 0,
+        density: 0,
+        uniqueDays: 0,
+        eventsWithActualDates: 0,
+        eventsWithoutActualDates,
+        totalTemporalEvents: temporalEvents.length,
+      }
+    }
+
+    const earliest = dates[0]
+    const latest = dates[dates.length - 1]
+    const span = Math.ceil((latest.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24))
+
+    // Calculate temporal density (unique days with events / total span)
+    const uniqueDays = new Set(dates.map((d) => formatDateConsistent(d)))
+    const density = span > 0 ? (uniqueDays.size / span) * 100 : 0
 
     return {
       earliest: formatDateConsistent(earliest),
       latest: formatDateConsistent(latest),
-      span: Math.ceil((latest.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24)),
+      span,
+      density,
+      uniqueDays: uniqueDays.size,
+      eventsWithActualDates,
+      eventsWithoutActualDates,
+      totalTemporalEvents: temporalEvents.length,
     }
   }, [events])
 
@@ -343,14 +373,72 @@ export function AnalyticsPanels({ events, backendClusters }: AnalyticsPanelsProp
               <SimpleGrid columns={2} spacing={4}>
                 <Stat>
                   <StatLabel fontSize="xs">Earliest Event</StatLabel>
-                  <StatNumber fontSize="lg">{temporalRange.earliest}</StatNumber>
+                  <StatNumber fontSize="lg">
+                    {temporalRange.earliest || 'N/A'}
+                  </StatNumber>
                 </Stat>
 
                 <Stat>
                   <StatLabel fontSize="xs">Latest Event</StatLabel>
-                  <StatNumber fontSize="lg">{temporalRange.latest}</StatNumber>
+                  <StatNumber fontSize="lg">
+                    {temporalRange.latest || 'N/A'}
+                  </StatNumber>
                 </Stat>
               </SimpleGrid>
+
+              <Divider />
+
+              <Box>
+                <Text fontSize="xs" fontWeight="medium" mb={2}>
+                  Date Quality
+                </Text>
+                <SimpleGrid columns={2} spacing={4}>
+                  <Box>
+                    <HStack justify="space-between" mb={1}>
+                      <Text fontSize="xs" color="gray.600">
+                        With actual dates
+                      </Text>
+                      <Text fontSize="xs" fontWeight="bold" color="green.600">
+                        {temporalRange.eventsWithActualDates}
+                      </Text>
+                    </HStack>
+                    <Progress
+                      value={
+                        temporalRange.totalTemporalEvents > 0
+                          ? (temporalRange.eventsWithActualDates /
+                              temporalRange.totalTemporalEvents) *
+                            100
+                          : 0
+                      }
+                      colorScheme="green"
+                      size="sm"
+                    />
+                  </Box>
+                  <Box>
+                    <HStack justify="space-between" mb={1}>
+                      <Text fontSize="xs" color="gray.600">
+                        Without actual dates
+                      </Text>
+                      <Text fontSize="xs" fontWeight="bold" color="orange.600">
+                        {temporalRange.eventsWithoutActualDates}
+                      </Text>
+                    </HStack>
+                    <Progress
+                      value={
+                        temporalRange.totalTemporalEvents > 0
+                          ? (temporalRange.eventsWithoutActualDates /
+                              temporalRange.totalTemporalEvents) *
+                            100
+                          : 0
+                      }
+                      colorScheme="orange"
+                      size="sm"
+                    />
+                  </Box>
+                </SimpleGrid>
+              </Box>
+
+              <Divider />
 
               <Box>
                 <Text fontSize="xs" fontWeight="medium" mb={2}>
@@ -358,14 +446,22 @@ export function AnalyticsPanels({ events, backendClusters }: AnalyticsPanelsProp
                 </Text>
                 <HStack justify="space-between" mb={1}>
                   <Text fontSize="xs" color="gray.600">
-                    {temporalRange.span} days
+                    {temporalRange.span} days ({(temporalRange.span / 365).toFixed(1)} years)
                   </Text>
                   <Text fontSize="xs" color="gray.600">
-                    {(temporalRange.span / 365).toFixed(1)} years
+                    {temporalRange.uniqueDays} unique days
+                  </Text>
+                </HStack>
+                <HStack justify="space-between" mb={1}>
+                  <Text fontSize="xs" color="gray.600">
+                    Temporal Density
+                  </Text>
+                  <Text fontSize="xs" fontWeight="bold">
+                    {temporalRange.density.toFixed(1)}%
                   </Text>
                 </HStack>
                 <Progress
-                  value={Math.min((temporalRange.span / 365) * 10, 100)}
+                  value={temporalRange.density}
                   colorScheme="purple"
                   size="sm"
                 />
