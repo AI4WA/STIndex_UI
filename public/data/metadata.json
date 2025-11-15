@@ -2,7 +2,7 @@
   "model_name": "Qwen3-8B",
   "clustering_mode": "spatiotemporal",
   "dimensions_analyzed": "all",
-  "export_timestamp": "2025-11-12T21:50:00.684576",
+  "export_timestamp": "2025-11-14T23:04:53.008685",
   "file_count": 4,
   "extraction_count": 116
 }
