@@ -250,7 +250,7 @@ export default function TerminologyPage() {
             <Button
               leftIcon={<MdArrowBack />}
               variant="ghost"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/dashboard')}
               size="sm"
             >
               Back to Dashboard
