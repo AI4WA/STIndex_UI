@@ -12,7 +12,7 @@ import {
   Image,
 } from '@chakra-ui/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { FiHome, FiBarChart2 } from 'react-icons/fi'
+import { FiHome, FiBarChart2, FiVideo } from 'react-icons/fi'
 
 export function Header() {
   const router = useRouter()
@@ -24,6 +24,7 @@ export function Header() {
 
   const isHome = pathname === '/'
   const isDashboard = pathname === '/dashboard'
+  const isTutorial = pathname === '/tutorial'
 
   return (
     <Box
@@ -68,6 +69,16 @@ export function Header() {
               color={isDashboard ? 'white' : undefined}
             >
               Dashboard
+            </Button>
+            <Button
+              leftIcon={<Icon as={FiVideo} />}
+              variant={isTutorial ? 'solid' : 'ghost'}
+              colorScheme={isTutorial ? 'blue' : 'gray'}
+              onClick={() => router.push('/tutorial')}
+              _hover={{ bg: isTutorial ? undefined : hoverBg }}
+              color={isTutorial ? 'white' : undefined}
+            >
+              Tutorial
             </Button>
           </HStack>
         </Flex>

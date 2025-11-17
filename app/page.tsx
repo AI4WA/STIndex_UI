@@ -19,6 +19,7 @@ import {
   StatHelpText,
   Badge,
   Flex,
+  Image,
 } from '@chakra-ui/react'
 import { useRouter } from 'next/navigation'
 import { FiExternalLink, FiArrowRight, FiMap, FiClock, FiLayers, FiTrendingUp } from 'react-icons/fi'
@@ -242,6 +243,34 @@ export default function Home() {
                   public health surveillance case study on real-world health event reports. Evaluation on 500 documents shows
                   context-awareness improves combined F1 by <Badge colorScheme="green">4.37%</Badge> for GPT-4o-mini and <Badge colorScheme="green">3.60%</Badge> for Qwen3-8B.
                 </Text>
+              </Box>
+
+              {/* System Architecture */}
+              <Box
+                  bg={bgColor}
+                  p={8}
+                  borderRadius="xl"
+                  borderWidth="1px"
+                  borderColor={borderColor}
+                  boxShadow="lg"
+              >
+                <Heading as="h2" size="lg" mb={6} color="purple.600" _dark={{ color: 'purple.300' }} textAlign="center">
+                  System Architecture
+                </Heading>
+                <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                >
+                  <Image
+                      src="/stindex-overview.png"
+                      alt="STIndex System Architecture Overview"
+                      borderRadius="lg"
+                      boxShadow="xl"
+                      maxW="100%"
+                      height="auto"
+                  />
+                </Box>
               </Box>
 
               {/* Evaluation Results */}
@@ -477,3 +506,4 @@ export default function Home() {
       </>
   )
 }
+
